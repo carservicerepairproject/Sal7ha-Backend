@@ -1,33 +1,37 @@
 import { ForbiddenException, Injectable } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
+import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from 'src/prisma/prisma.service';
-import { UserSignInDto } from '../dto';
 import * as argon from 'argon2';
 import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
-import { JwtService } from '@nestjs/jwt';
-import { ConfigService } from '@nestjs/config';
-import { UserSignUpDto } from '../dto/user-signup-auth.dto';
+import { error } from 'console';
+import { BusinessSignUpDto } from '../dto';
+import { BusinessSignInDto } from '../dto/business-signin.auth.dto';
 
 @Injectable()
-export class AuthService {
+export class BusinessAuthService {
   constructor(
     private prisma: PrismaService,
     private jwt: JwtService,
     private config: ConfigService,
   ) {}
 
-  async signUp(dto: UserSignUpDto) {
+  async signUp(dto: BusinessSignUpDto) {
     const hash = await argon.hash(dto.password);
     try {
-      const user = await this.prisma.user.create({
+      const shop = await this.prisma.business.create({
         data: {
           email: dto.email,
           hash: hash,
-          firstName: dto.firstName,
-          lastName: dto.lastName,
+          name: dto.name,
+          phoneNumber: dto.phoneNumber,
+          country: dto.country,
+          city: dto.city,
+          commercialRegistraionNumber: dto.commercialRegistraionNumber,
+          taxIdentificationNumber: dto.taxIdentificationNumber,
         },
       });
-
-      return this.signToken(user.id, user.email);
+      return this.signToken(shop.id, shop.email);
     } catch (error) {
       if (error instanceof PrismaClientKnownRequestError) {
         if (error.code === 'P2002') {
@@ -38,28 +42,28 @@ export class AuthService {
     }
   }
 
-  async signIn(dto: UserSignInDto) {
-    const user = await this.prisma.user.findUnique({
+  async signIn(dto: BusinessSignInDto) {
+    const shop = await this.prisma.business.findUnique({
       where: {
         email: dto.email,
       },
     });
-    if (!user) throw new ForbiddenException('Credentials Incorrect');
-
-    const pwMatches = await argon.verify(user.hash, dto.password);
+    if (!shop) throw new ForbiddenException('Credentials Incorrect');
+    const pwMatches = await argon.verify(shop.hash, dto.password);
     if (!pwMatches) throw new ForbiddenException('Credentials Incorrect');
 
-    return this.signToken(user.id, user.email);
+    return this.signToken(shop.id, shop.email);
   }
 
   async signToken(
-    userId: number,
+    shopId: number,
     email: string,
-  ): Promise<{ access_token: string }> {
+  ): Promise<{ access_token: String }> {
     const payload = {
-      sub: userId,
+      sub: shopId,
       email,
     };
+
     const secret = this.config.get('JWT_SECRET');
 
     const token = await this.jwt.signAsync(payload, {

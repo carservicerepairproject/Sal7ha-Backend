@@ -19,13 +19,34 @@ model User {
   updatedAt DateTime @updatedAt
 
   email String @unique
-  hash  String
 
-  firstName String?
-  lastName  String?
+  firstName   String?
+  lastName    String?
+  phoneNumber Int
+
+  streetAddress String?
+  country       String?
+  city          String?
+
+  // Relationships
+  businessOwner BusinessOwner?
+  client        Client?
 }
 
-model Shop {
+model Client {
+  id     Int    @id @default(autoincrement())
+  userId Int    @unique
+  user   User   @relation(fields: [userId], references: [id])
+  hash   String
+}
+
+model BusinessOwner {
+  id     Int  @id @default(autoincrement())
+  userId Int  @unique
+  user   User @relation(fields: [userId], references: [id])
+}
+
+model Business {
   id        Int      @id @default(autoincrement())
   createdAt DateTime @default(now())
   updatedAt DateTime @default(now())
@@ -41,15 +62,4 @@ model Shop {
   commercialRegistraionNumber Int
   // بطاقة ضريبية
   taxIdentificationNumber     Int
-}
-
-model Item {
-  id        Int      @unique @default(autoincrement())
-  createdAt DateTime @default(now())
-  updatedAt DateTime @default(now())
-
-  name    String
-  company String
-  type    String
-  amount  Int
 }

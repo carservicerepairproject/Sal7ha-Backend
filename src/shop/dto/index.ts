@@ -1,1 +1,1 @@
-export * from './shop-signup.auth.dto';
+export * from './business-signup.auth.dto';

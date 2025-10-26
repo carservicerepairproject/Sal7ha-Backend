@@ -5,7 +5,7 @@ import { ExtractJwt, Strategy } from 'passport-jwt';
 import { PrismaService } from 'src/prisma/prisma.service';
 
 @Injectable()
-export class ShopJwtStrategy extends PassportStrategy(Strategy, 'shop-jwt') {
+export class JwtStrategy extends PassportStrategy(Strategy, 'user-jwt') {
   constructor(
     config: ConfigService,
     private prisma: PrismaService,
@@ -17,18 +17,19 @@ export class ShopJwtStrategy extends PassportStrategy(Strategy, 'shop-jwt') {
   }
 
   async validate(payload: { sub: number; email: string }) {
-    const shop = await this.prisma.shop.findUnique({
-      where: {
-        id: payload.sub,
-      },
+    const user = await this.prisma.user.findUnique({
+      where: { id: payload.sub },
+      include: { client: true, businessOwner: true },
     });
 
-    if (!shop) {
-      throw new Error('Shop Not Found');
+    if (!user) {
+      throw new Error('User not found');
     }
 
-    const { hash, ...shopWithoutHash } = shop;
+    if (user.client) {
+      delete (user.client as any).hash;
+    }
 
-    return shopWithoutHash;
+    return user;
   }
 }

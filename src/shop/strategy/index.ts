@@ -1,1 +1,1 @@
-export * from './shop-jwt.strategy';
+export * from './business-jwt.strategy';

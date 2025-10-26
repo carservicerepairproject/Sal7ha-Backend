@@ -2,11 +2,13 @@ import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
-import { from } from 'rxjs';
 import { PrismaService } from 'src/prisma/prisma.service';
 
 @Injectable()
-export class JwtStrategy extends PassportStrategy(Strategy, 'user-jwt') {
+export class BusinessJwtStrategy extends PassportStrategy(
+  Strategy,
+  'business-jwt',
+) {
   constructor(
     config: ConfigService,
     private prisma: PrismaService,
@@ -18,17 +20,18 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'user-jwt') {
   }
 
   async validate(payload: { sub: number; email: string }) {
-    const user = await this.prisma.user.findUnique({
+    const business = await this.prisma.business.findUnique({
       where: {
         id: payload.sub,
       },
     });
-    if (!user) {
-      throw new Error('User not found');
+
+    if (!business) {
+      throw new Error('Business Not Found');
     }
 
-    const { hash, ...userWithoutHash } = user;
+    const { hash, ...businessWithoutHash } = business;
 
-    return userWithoutHash;
+    return businessWithoutHash;
   }
 }

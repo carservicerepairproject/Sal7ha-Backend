@@ -1,37 +1,41 @@
 import { ForbiddenException, Injectable } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
-import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from 'src/prisma/prisma.service';
+import { UserSignInDto } from '../dto';
 import * as argon from 'argon2';
 import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
-import { error } from 'console';
-import { ShopSignUpDto } from '../dto';
-import { ShopSignInDto } from '../dto/shop-signin.auth.dto';
+import { JwtService } from '@nestjs/jwt';
+import { ConfigService } from '@nestjs/config';
+import { UserSignUpDto } from '../dto/user-signup-auth.dto';
 
 @Injectable()
-export class ShopAuthService {
+export class ClientAuthService {
   constructor(
     private prisma: PrismaService,
     private jwt: JwtService,
     private config: ConfigService,
   ) {}
 
-  async signUp(dto: ShopSignUpDto) {
+  async signUp(dto: UserSignUpDto) {
     const hash = await argon.hash(dto.password);
     try {
-      const shop = await this.prisma.shop.create({
+      const user = await this.prisma.user.create({
         data: {
           email: dto.email,
-          hash: hash,
-          name: dto.name,
+          firstName: dto.firstName,
+          lastName: dto.lastName,
           phoneNumber: dto.phoneNumber,
-          country: dto.country,
-          city: dto.city,
-          commercialRegistraionNumber: dto.commercialRegistraionNumber,
-          taxIdentificationNumber: dto.taxIdentificationNumber,
+          client: {
+            create: {
+              hash: hash,
+            },
+          },
+        },
+        include: {
+          client: true,
         },
       });
-      return this.signToken(shop.id, shop.email);
+
+      return this.signToken(user.id, user.email);
     } catch (error) {
       if (error instanceof PrismaClientKnownRequestError) {
         if (error.code === 'P2002') {
@@ -42,28 +46,30 @@ export class ShopAuthService {
     }
   }
 
-  async signIn(dto: ShopSignInDto) {
-    const shop = await this.prisma.shop.findUnique({
+  async signIn(dto: UserSignInDto) {
+    const user = await this.prisma.user.findUnique({
       where: {
         email: dto.email,
       },
+      include: { client: true },
     });
-    if (!shop) throw new ForbiddenException('Credentials Incorrect');
-    const pwMatches = await argon.verify(shop.hash, dto.password);
+    if (!user || !user.client)
+      throw new ForbiddenException('Credentials Incorrect');
+
+    const pwMatches = await argon.verify(user.client.hash, dto.password);
     if (!pwMatches) throw new ForbiddenException('Credentials Incorrect');
 
-    return this.signToken(shop.id, shop.email);
+    return this.signToken(user.id, user.email);
   }
 
   async signToken(
-    shopId: number,
+    userId: number,
     email: string,
-  ): Promise<{ access_token: String }> {
+  ): Promise<{ access_token: string }> {
     const payload = {
-      sub: shopId,
+      sub: userId,
       email,
     };
-
     const secret = this.config.get('JWT_SECRET');
 
     const token = await this.jwt.signAsync(payload, {
