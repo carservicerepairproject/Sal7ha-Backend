@@ -3,7 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from 'src/prisma/prisma.service';
 import * as argon from 'argon2';
-import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
+import { Prisma } from '@prisma/client';
 import { error } from 'console';
 import { BusinessSignUpDto } from '../dto';
 import { BusinessSignInDto } from '../dto/business-signin.auth.dto';
@@ -33,7 +33,7 @@ export class BusinessAuthService {
       });
       return this.signToken(shop.id, shop.email);
     } catch (error) {
-      if (error instanceof PrismaClientKnownRequestError) {
+     if (error instanceof Prisma.PrismaClientKnownRequestError) {
         if (error.code === 'P2002') {
           throw new ForbiddenException('Credentials Taken');
         }
