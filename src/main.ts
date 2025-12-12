@@ -13,7 +13,10 @@ async function bootstrap() {
       }),
     )
     .enableCors({
-      origin: ['http://localhost:3000'],
+      origin: [
+        'http://localhost:3000',
+        process.env.FRONTEND_URL, // Add this
+      ].filter(Boolean), // Remove undefined values
       methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
       allowedHeaders: ['Content-Type', 'Authorization'],
       credentials: true,
