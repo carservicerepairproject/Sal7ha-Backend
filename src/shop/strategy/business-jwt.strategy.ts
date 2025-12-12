@@ -10,7 +10,7 @@ export class BusinessJwtStrategy extends PassportStrategy(
   'business-jwt',
 ) {
   constructor(
-    config: ConfigService,
+    private config: ConfigService,
     private prisma: PrismaService,
   ) {
     super({
