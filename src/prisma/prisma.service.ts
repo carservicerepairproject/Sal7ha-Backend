@@ -14,10 +14,11 @@ export class PrismaService
       config.get<string>('DATABASE_URL') ?? process.env.DATABASE_URL;
 
     const host = (() => {
-      try {
-        return databaseUrl ? new URL(databaseUrl).host : 'missing DATABASE_URL';
-      } catch {
-        return 'invalid DATABASE_URL';
+      const databaseUrl =
+        config.get<string>('DATABASE_URL') ?? process.env.DATABASE_URL;
+
+      if (!databaseUrl) {
+        throw new Error('DATABASE_URL is missing at runtime');
       }
     })();
     console.log('DB HOST:', host);
